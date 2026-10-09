@@ -1,0 +1,16 @@
+{
+  "name": "landseed-work-report",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "林踐宇個人工作報告 雙向 HTML 版（本機開發用；網站本體零相依）",
+  "scripts": {
+    "test": "node --test tests/",
+    "test:py": "python3 -m unittest discover -s tests -p \"test_*.py\"",
+    "e2e": "node tests/e2e/e2e.mjs",
+    "leak": "bash tools/check_leak.sh"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.13.0"
+  }
+}

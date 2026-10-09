@@ -1,0 +1,22 @@
+/* CIS token：全站唯一允許出現色值字面的檔（值來自 render.py） */
+:root {
+  --navy:#0054A7; --blue:#008CD6; --green:#009C42; --light:#EFF6FC; --grey:#6E6A67;
+  --red:#C00000; --band:#D9E4EE; --ink:#3E3A39; --headfill:#D3EDFB;
+  --thead-bg:#EAF2F9; --thead-fg:#0054A7; --white:#FFFFFF;
+  --bg:#FFFFFF; --bg-muted:#EFF6FC;          /* body 背景須明確設 var(--bg) */
+  --font-sans:"Microsoft JhengHei","微軟正黑體","PingFang TC","Noto Sans TC",sans-serif;
+  --fs-body:15px; --fs-small:13px; --fs-h1:20px; --fs-title:26px; --fs-stat:30px; --lh-body:1.6;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px; --sp-8:32px;
+  --radius:6px; --logo-h:36px;               /* logo 只設 height，width:auto，比例 5.3929:1 */
+
+  /* 衍生色 */
+  --shadow:0 1px 3px rgba(62,58,57,0.12);
+  --blue-soft:rgba(0,140,214,0.10);
+  --navy-soft:rgba(0,84,167,0.08);
+  --error-bg:#FDECEC;
+  --track:#F2F5F8;
+  --zebra:#FAFCFE;
+  --backdrop:rgba(62,58,57,0.35);
+  --drawer-shadow:-4px 0 16px rgba(62,58,57,0.14);
+  --sheet-shadow:0 -4px 16px rgba(62,58,57,0.18);
+}

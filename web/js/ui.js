@@ -5,6 +5,9 @@ import { createApi } from "./api.js";
 import { renderReport } from "./render.js";
 import { normalizeContent, buildAnchors } from "./anchors.js";
 
+// false＝單向模式：只陳述報告內容，不開留言／狀態鈕／輪詢（已閱仍在背景記錄，作者首頁看得到）
+// 要恢復雙向，改回 true 即可
+const TWO_WAY = false;
 const POLL_MS = 20000;
 const FULL_EVERY = 6; // 每 6 次輪詢全量重抓一次（增量抓不到被清除的狀態）
 const TOKEN_KEY = "lwr.token";
@@ -155,7 +158,7 @@ function drawDemoBar(period) {
   const suffix = period ? "&r=" + encodeURIComponent(period) : "";
   bar.replaceChildren(
     el("strong", { text: "示範模式" }),
-    "假資料，留言只存在這台電腦的瀏覽器。切換身分：",
+    TWO_WAY ? "假資料，留言只存在這台電腦的瀏覽器。切換身分：" : "假資料。切換身分：",
     ...DEMO_IDS.map(([t, label]) => el("a", {
       href: "#k=" + t + suffix, class: S.token === t ? "is-current" : null,
       "aria-current": S.token === t ? "true" : null, text: label,
@@ -217,7 +220,7 @@ async function openHome(seq) {
   drawHome(list);
   showView("home");
   document.title = "林踐宇工作報告";
-  startPoll();
+  if (TWO_WAY) startPoll();
 }
 
 function drawHome(list) {
@@ -230,14 +233,14 @@ function drawHome(list) {
   const items = list.map((r) => {
     const badges = el("span", { class: "badges" });
     if (S.me.role === "reader") badges.append(r.first_at ? badge("已閱", "read") : badge("未閱", "unseen"));
-    if (r.unread_replies > 0) badges.append(badge("新回覆 " + r.unread_replies, "reply"));
-    if (r.unread_count > 0) badges.append(badge("未讀 " + r.unread_count, "unread"));
+    if (TWO_WAY && r.unread_replies > 0) badges.append(badge("新回覆 " + r.unread_replies, "reply"));
+    if (TWO_WAY && r.unread_count > 0) badges.append(badge("未讀 " + r.unread_count, "unread"));
     const li = el("li", { class: "rep-item", "data-period": r.period },
       el("a", { class: "rep-link", href: "#r=" + encodeURIComponent(r.period) },
         el("span", { class: "rep-title", text: r.title }),
         el("span", { class: "rep-meta", text: "期別 " + r.period + "｜發佈 " + fmtTime(r.published_at) + (r.version > 1 ? "｜第 " + r.version + " 版" : "") }),
       ),
-      el("span", { class: "rep-side" }, badges, el("span", { class: "rep-count", text: "留言 " + (r.comment_count || 0) })),
+      el("span", { class: "rep-side" }, badges, TWO_WAY ? el("span", { class: "rep-count", text: "留言 " + (r.comment_count || 0) }) : null),
     );
     if (S.me.role === "author" && Array.isArray(r.readers) && r.readers.length) {
       li.append(el("ul", { class: "rep-readers", "aria-label": "讀者已閱狀況" },
@@ -270,11 +273,12 @@ async function openReport(period, seq) {
   const { html } = renderReport(rep.content);
   view.innerHTML = html; // render.js 輸出：所有欄位已 escape
   view.prepend(el("nav", { class: "crumb" }, el("a", { href: "#", class: "back-link", text: "← 期別清單" })));
-  decorate(view);
+  if (TWO_WAY) decorate(view);
   showView("report");
   document.title = (rep.content && rep.content.period ? rep.content.period + "｜" : "") + "林踐宇工作報告";
 
   S.api.markRead(rep.report_id).catch((e) => console.error("[ui] markRead", e));
+  if (!TWO_WAY) return;
   await poll(true);
   startPoll();
 }

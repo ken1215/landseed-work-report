@@ -149,7 +149,40 @@ function handleFatal(e) {
 
 function parseHash() {
   const p = new URLSearchParams(location.hash.replace(/^#/, ""));
-  return { k: p.get("k"), r: p.get("r") };
+  return { k: p.get("k"), r: p.get("r"), s: p.get("s") };
+}
+
+function paintReport(content) {
+  const view = $("report");
+  const { html } = renderReport(content);
+  view.innerHTML = html; // render.js 輸出：所有欄位已 escape
+  return view;
+}
+
+// 分享連結（#s=<key>）：一把金鑰對應一期，直接顯示、不登入、不顯示期別清單與身分
+async function openShared(key, seq) {
+  stopPoll();
+  closeDrawer();
+  $("who").hidden = true;
+  $("demo-bar").hidden = true;
+  let rep;
+  try {
+    rep = await S.api.getShared(key);
+  } catch (e) {
+    if (seq !== S.seq) return;
+    if (e && e.code === "invalid_token") {
+      showNotice("此報告連結無效或已更換，請向林踐宇索取最新連結。");
+      return;
+    }
+    console.error(e);
+    showNotice(errText(e));
+    return;
+  }
+  if (seq !== S.seq) return;
+  S.report = rep;
+  paintReport(rep.content);
+  showView("report");
+  document.title = (rep.content && rep.content.period ? rep.content.period + "｜" : "") + "林踐宇工作報告";
 }
 
 function drawDemoBar(period) {
@@ -173,7 +206,8 @@ function drawDemoBar(period) {
 
 async function route() {
   const seq = ++S.seq;
-  const { k, r } = parseHash();
+  const { k, r, s } = parseHash();
+  if (s) return openShared(s, seq);
   if (k) {
     // 網址上的 token 優先；存起來後從網址列移除，避免截圖外洩
     if (k !== S.token) S.me = null;
@@ -269,9 +303,7 @@ async function openReport(period, seq) {
   S.since = null;
   S.pollN = 0;
 
-  const view = $("report");
-  const { html } = renderReport(rep.content);
-  view.innerHTML = html; // render.js 輸出：所有欄位已 escape
+  const view = paintReport(rep.content);
   view.prepend(el("nav", { class: "crumb" }, el("a", { href: "#", class: "back-link", text: "← 期別清單" })));
   if (TWO_WAY) decorate(view);
   showView("report");

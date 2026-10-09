@@ -35,6 +35,20 @@
 
 ---
 
+## 分享連結（目前使用：單向、免登入）
+
+2026-10-09 起網站為**單向模式**（`web/js/ui.js` 的 `TWO_WAY=false`：只閱讀、不留言），對外一律用「報告分享連結」：
+每期一把隨機金鑰，網址 `…/index.html#s=<金鑰>`，點開直接看該期，看不到其他期別，不需登入。
+
+```bash
+python3 tools/share.py link  --period 261003-1009            # 印出（或首次建立）該期分享連結
+python3 tools/share.py link  --period 261003-1009 --rotate   # 連結外流時換新金鑰，舊連結立即失效
+python3 tools/share.py opens --period 261003-1009            # 查開啟紀錄（UTC），供「有沒有打開」查證
+```
+- 金鑰明文只存本機 `private/share_links.json`，資料庫只存 SHA-256。
+- 每週流程：`publish.py <週資料夾>` → `share.py link --period <期別>` → 把連結傳給院長。
+- 原本的個人專屬連結（`#k=`）與 `readers.py` 仍保留，恢復雙向時使用。
+
 ## 本機 demo（不需要 Supabase）
 
 ```bash

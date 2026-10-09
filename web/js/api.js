@@ -73,10 +73,17 @@ class SupabaseApi extends BaseApi {
 
   async _rpc(fn, params) {
     const p_token = this._tok();
+    return this._call(fn, { p_token, ...params });
+  }
+
+  // 分享連結（#s=）：不帶 token，金鑰本身就是授權
+  getShared(key) { return this._call("rs_get_shared", { p_key: key }); }
+
+  async _call(fn, params) {
     let res;
     try {
       const client = await this._getClient();
-      res = await client.rpc(fn, { p_token, ...params });
+      res = await client.rpc(fn, params);
     } catch (e) {
       const msg = (e && e.message) || String(e);
       const code = codeFromMessage(msg);
@@ -159,6 +166,8 @@ class MockApi extends BaseApi {
     this._index = null;
     this._reports = new Map();
   }
+
+  async getShared() { fail("invalid token"); } // 分享連結只在接上 Supabase 時有效
 
   _nowIso() { return this._now().toISOString(); }
 

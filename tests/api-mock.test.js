@@ -417,3 +417,15 @@ test("private/mock 對接（publish --mock 產出）", { skip: hasMock ? false :
     assert.equal(s.status, "同意");
   }
 });
+
+test("分享連結：getShared 不帶 token、只送 p_key；錯誤對到 invalid_token；mock 一律無效", async () => {
+  const f = fakeSupabase((fn, p) => (p.p_key === "good-key-0123456789"
+    ? { data: { period: "p1" }, error: null }
+    : { data: null, error: { message: "invalid token" } }));
+  const api = createApi(SBCFG, { importModule: async () => f.mod });
+  assert.deepEqual(await api.getShared("good-key-0123456789"), { period: "p1" });
+  assert.deepEqual(f.calls[0], ["rs_get_shared", { p_key: "good-key-0123456789" }]);
+  await rejects(api.getShared("bad"), "invalid_token");
+  const { as } = setup();
+  await rejects(as("demo-reader-1").getShared("good-key-0123456789"), "invalid_token");
+});

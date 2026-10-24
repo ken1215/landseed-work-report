@@ -2,7 +2,7 @@
 
 用法：python tools/build_static.py "<週資料夾>"
 - 讀 <週資料夾>/_src/content.json；同一期沿用 _src/static_key.txt 的亂碼檔名（網址不變）。
-- 版面原則：先「30 秒速覽」（數字卡＋重點卡＋決議卡），細節（角色、每日行程）收合。
+- 版面原則：先「30 秒速覽」（數字卡＋重點卡＋決議卡），各節全部展開（2026-10-24 起）。
 - 色值只用 web/css/tokens.css 的 CIS 色。
 """
 import html, json, re, secrets, sys
@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 TOKENS = (ROOT / "web/css/tokens.css").read_text(encoding="utf-8")
 SITE = "https://ken1215.github.io/landseed-work-report/r/"
-COLLAPSE = {"role", "day"}          # 這些表所在的節預設收合
+COLLAPSE = set()                    # 2026-10-24 使用者：全部預設展開，院長不一定會點開；要恢復收合填 {"role", "day"}
 BAR_C = {"navy", "blue", "green", "red", "grey"}
 
 
@@ -164,7 +164,7 @@ def build(c):
     nav = "".join(f'<a href="#s{i+1}">{html.escape(t)}</a>' for i, (_, t) in enumerate(rendered))
     glance = (f'<div class="glance"><span><b>{n_dec}</b> 項已決議</span>'
               + (f'<span class="w"><b>{n_wait}</b> 項待裁示</span>' if n_wait else "")
-              + '<span class="hint">先看 01 重點與決議；行程細節可展開</span></div>')
+              + '<span class="hint">先看 01 重點與決議</span></div>')
     return f"""<!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

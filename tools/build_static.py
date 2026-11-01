@@ -4,6 +4,7 @@
 - 讀 <週資料夾>/_src/content.json；同一期沿用 _src/static_key.txt 的亂碼檔名（網址不變）。
 - 版面原則：先「30 秒速覽」（數字卡＋重點卡＋決議卡），各節全部展開（2026-10-24 起）。
 - 色值只用 web/css/tokens.css 的 CIS 色。
+- 2026-11-01 改版：速覽列計「待核定」件數（整節標待核定／待裁示者；2026-11-01 使用者取消獨立的請院長決定卡）、節氣標籤、CIS 四瓣圖示與藍綠漸層線、導覽列短名＋目前位置、手機數字卡改橫列、回頂端鈕。
 """
 import html, json, re, secrets, sys
 from pathlib import Path
@@ -38,7 +39,47 @@ def proj_tone(name):
 
 
 def pending(text):
-    return bool(re.search(r"待裁示|提請裁示|待核示", text))
+    # 2026-11-01：「待院長核定」也算——上週版漏抓，最要緊的一件沒進速覽
+    return bool(re.search(r"待裁示|提請裁示|待核示|待(?:院長)?核定", text))
+
+
+# CIS Logo 四瓣（上綠、左右下藍），當章節編號與標記的小圖示
+PETAL = ('<svg class="petal" viewBox="0 0 20 20" aria-hidden="true">'
+         '<circle cx="10" cy="4.6" r="4" fill="var(--green)"/><circle cx="4.6" cy="10" r="4" fill="var(--blue)"/>'
+         '<circle cx="15.4" cy="10" r="4" fill="var(--blue)"/><circle cx="10" cy="15.4" r="4" fill="var(--blue)"/></svg>')
+
+# 二十四節氣（台灣常用的近似日，年差 ±1 日不影響標籤）
+TERMS = [(1, 5, "小寒"), (1, 20, "大寒"), (2, 4, "立春"), (2, 19, "雨水"), (3, 5, "驚蟄"), (3, 20, "春分"),
+         (4, 5, "清明"), (4, 20, "穀雨"), (5, 5, "立夏"), (5, 21, "小滿"), (6, 5, "芒種"), (6, 21, "夏至"),
+         (7, 7, "小暑"), (7, 22, "大暑"), (8, 7, "立秋"), (8, 23, "處暑"), (9, 7, "白露"), (9, 23, "秋分"),
+         (10, 8, "寒露"), (10, 23, "霜降"), (11, 7, "立冬"), (11, 22, "小雪"), (12, 7, "大雪"), (12, 21, "冬至")]
+SEASONS = "冬春夏秋"          # 立春 index 2 起算，每 6 個節氣一季
+
+
+def solar_term(period):
+    """取期間最後一天所在節氣 →「霜降・晚秋」。"""
+    ds = re.findall(r"(\d{1,2})月(\d{1,2})日", period)
+    if not ds:
+        return ""
+    m, d = map(int, ds[-1])
+    idx = max([i for i, (tm, td, _) in enumerate(TERMS) if (tm, td) <= (m, d)], default=23)
+    k = (idx - 2) % 24                  # 0 = 立春
+    season = "春夏秋冬"[k // 6]
+    stage = ("初", "仲", "晚")[k % 6 // 2]
+    return f"{TERMS[idx][2]}・{stage}{season}"
+
+
+SHORT = {"本期重點事項": "重點", "專案角色與延續事項": "角色", "行程與工作內容": "行程",
+         "關鍵決議與成果重點": "決議"}
+
+
+def short_title(t):
+    if t in SHORT:
+        return SHORT[t]
+    s = re.sub(r"^(板新|本期)\s*", "", t)
+    s = re.sub(r"(簡報)?摘要$|事項$", "", s)
+    s = s.split("與")[0]
+    return s if len(s) <= 9 else s[:8] + "…"
 
 
 def r_stats(items):
@@ -146,7 +187,7 @@ def render_sec(i, s):
     badge = '<span class="flag flag-wait">待裁示</span>' if wait else ""
     note = f'<span class="sec-note">{md(s["note"])}</span>' if s["note"] else ""
     head = (f'<p class="kicker">{md(s["kicker"])}</p>' if s["kicker"] else "") + \
-           f'<h2 class="h2"><span class="h2-no">{i:02d}</span>{md(title)}{badge}{note}</h2>'
+           f'<h2 class="h2"><span class="h2-no">{PETAL}{i:02d}</span>{md(title)}{badge}{note}</h2>'
     body = "".join(parts)
     if grids & COLLAPSE:
         return (f'<section class="sec" id="s{i}"><details><summary>{head}'
@@ -158,13 +199,18 @@ def build(c):
     secs = sections(c["blocks"])
     n_dec = sum(len(b["table"]["rows"]) - 1 for s in secs for b in s["blocks"]
                 if "table" in b and b["table"]["grid"] == "decision")
-    n_wait = sum(len(b["table"]["rows"]) - 1 for s in secs if pending(s["note"]) for b in s["blocks"]
-                 if "table" in b and b["table"]["grid"] == "agenda")
     rendered = [render_sec(i + 1, s) for i, s in enumerate(secs)]
-    nav = "".join(f'<a href="#s{i+1}">{html.escape(t)}</a>' for i, (_, t) in enumerate(rendered))
+    asks = ask_items(secs)
+    nav = "".join(f'<a href="#s{i+1}" title="{html.escape(t)}"><i>{i+1:02d}</i>{html.escape(short_title(t))}</a>'
+                  for i, (_, t) in enumerate(rendered))
     glance = (f'<div class="glance"><span><b>{n_dec}</b> 項已決議</span>'
-              + (f'<span class="w"><b>{n_wait}</b> 項待裁示</span>' if n_wait else "")
-              + '<span class="hint">先看 01 重點與決議</span></div>')
+              + (f'<span class="w"><b>{len(asks)}</b> 項待核定</span>' if asks else "")
+              + '<span class="hint">先看 01 重點與 04 決議</span>'
+              + "".join(f'<a class="wn" href="#s{n}"><b>{md(t)}</b>{"：" + md(why) if why else ""}</a>'
+                        for n, t, why in asks)
+              + "</div>")
+    term = solar_term(c["period"])
+    term_tag = f'<span class="term">{html.escape(term)}</span>' if term else ""
     return f"""<!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -173,23 +219,59 @@ def build(c):
 <style>{TOKENS}{CSS}</style></head>
 <body>
 <header class="brand"><img src="../img/logo-cis.png" alt="LANDSEED 聯新國際醫療集團"></header>
-<main class="wrap">
+<main class="wrap" id="top">
 <div class="head"><h1>{html.escape(c["title"])}</h1>
-<p class="period">{html.escape(c["period"])}</p>
+<p class="period">{html.escape(c["period"])}{term_tag}</p>
 <p class="meta">提報對象　{html.escape(c["to"])}<span>｜</span>報告人　{html.escape(c["from"])}</p>
 {glance}</div>
-<nav class="nav">{nav}</nav>
+<nav class="nav" id="nav">{nav}</nav>
 {"".join(h for h, _ in rendered)}
 <p class="copy">Copyright © Landseed International Medical Group　本頁僅供提報對象閱覽</p>
-</main></body></html>"""
+</main>
+<a class="totop" href="#top" aria-label="回到頂端">↑</a>
+<script>{JS}</script></body></html>"""
+
+
+def ask_items(secs):
+    """速覽列「待核定」：整節標待核定／待裁示者一節一件，說明取副標「待核定，」後面那段
+    （如「下週工務會議與簡院長討論」）；沒有整節的才退回 01 重點卡逐列抓。"""
+    out = []
+    for n, s in enumerate(secs, 1):
+        if pending(s["note"]):
+            m = re.search(r"(?:待(?:院長)?(?:核定|裁示|核示)|提請裁示)[，,、\s]*([^）)]*)", s["note"])
+            out.append((n, re.sub(r"^[一二三四五六七八九十]+、", "", s["h1"]), m.group(1).strip() if m else ""))
+    if out:
+        return out
+    for n, s in enumerate(secs, 1):
+        for b in s["blocks"]:
+            if "table" in b and b["table"]["grid"] == "seq":
+                out += [(n, r[2], "") for r in b["table"]["rows"][1:] if pending(r[3])]
+    return out
+
+
+JS = """
+(function(){var nav=document.getElementById('nav'),links=[].slice.call(nav.querySelectorAll('a')),
+secs=[].slice.call(document.querySelectorAll('.sec')),t=document.querySelector('.totop'),cur=-1,tick=0;
+function upd(){tick=0;var k=-1;for(var i=0;i<secs.length;i++){if(secs[i].getBoundingClientRect().top<=140)k=i;}
+if(k!==cur){if(cur>=0)links[cur].classList.remove('on');cur=k;if(k>=0){var a=links[k];a.classList.add('on');
+nav.scrollLeft=a.offsetLeft-nav.clientWidth/2+a.offsetWidth/2;}}t.classList.toggle('show',scrollY>600);}
+addEventListener('scroll',function(){if(!tick){tick=1;requestAnimationFrame(upd);}},{passive:true});upd();})();
+"""
 
 
 CSS = """
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:var(--fs-body);line-height:1.65;overflow-wrap:anywhere}
-.brand{padding:10px 16px;border-bottom:2px solid var(--blue);background:var(--bg)}
-.brand img{height:30px;width:auto;display:block}
+.brand{position:relative;padding:12px 16px;background:var(--bg)}
+.brand::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--navy),var(--blue) 55%,var(--green))}
+.brand img{height:var(--logo-h);width:auto;display:block}
+.petal{width:.8em;height:.8em;margin-right:6px;vertical-align:-.05em;flex:none}
+.term{display:inline-block;margin-left:10px;padding:0 10px;border:1px solid var(--green);border-radius:999px;color:var(--green);font-size:12px;font-weight:700;line-height:1.9;vertical-align:2px;letter-spacing:.08em}
+.nav a i{font-style:normal;margin-right:4px;color:var(--blue);font-weight:700}
+.nav a.on{background:var(--navy);border-color:var(--navy);color:var(--white)}.nav a.on i{color:var(--white)}
+.totop{position:fixed;right:16px;bottom:20px;z-index:6;width:44px;height:44px;border-radius:50%;background:var(--navy);color:var(--white);font-size:20px;line-height:44px;text-align:center;text-decoration:none;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s}
+.totop.show{opacity:.9;pointer-events:auto}
 .wrap{max-width:960px;margin:0 auto;padding:0 16px 48px}
 .head{padding:24px 0 12px}
 .head h1{margin:0;color:var(--navy);font-size:26px;line-height:1.3}
@@ -198,6 +280,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans)
 .glance{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:14px;padding:10px 14px;background:var(--light);border-left:4px solid var(--navy);border-radius:var(--radius)}
 .glance b{font-size:20px;color:var(--navy)}.glance .w b{color:var(--red)}
 .glance .hint{color:var(--grey);font-size:var(--fs-small);margin-left:auto}
+.glance .wn{flex-basis:100%;padding-top:6px;border-top:1px dashed var(--band);color:var(--ink);font-size:14px;text-decoration:none}
+.glance .wn b{font-size:14px;color:var(--navy);margin-right:2px}.glance .wn:hover b{text-decoration:underline}
 .nav{position:sticky;top:0;z-index:5;display:flex;gap:6px;overflow-x:auto;padding:10px 0;background:var(--bg);border-bottom:1px solid var(--band);scrollbar-width:none}
 .nav a{flex:none;padding:3px 12px;border:1px solid var(--band);border-radius:999px;color:var(--navy);font-size:var(--fs-small);text-decoration:none;white-space:nowrap}
 .nav a:hover,.nav a:focus-visible{background:var(--headfill);border-color:var(--blue)}
@@ -269,8 +353,22 @@ details[open] .more{display:none}
 .callout{padding:12px 14px;background:var(--light);border-left:3px solid var(--blue);border-radius:var(--radius)}
 .foot{color:var(--grey);font-size:var(--fs-small)}
 .copy{margin-top:40px;padding-top:10px;border-top:1px solid var(--band);color:var(--grey);font-size:12px;text-align:center}
-@media (max-width:600px){.head h1{font-size:22px}.glance .hint{margin-left:0}.stat-v{font-size:26px}.bar{grid-template-columns:7em minmax(0,1fr) auto}.log-t{width:4.5em}.tbl table{min-width:0}}
-@media print{.nav,.more{display:none}details>*{display:block}.sec{break-inside:avoid-page}}
+.stat-note,.sec-note,.log-t,.date,.dec-next,.meta,.foot{color:var(--note)}
+@media (max-width:600px){
+body{font-size:16px;line-height:1.7}
+.brand img{height:30px}
+.head h1{font-size:22px}.glance .hint{margin-left:0}
+.term{margin:4px 0 0;display:table}
+.period{font-size:15px}
+.stats{grid-template-columns:1fr;gap:6px}
+.stat{display:grid;grid-template-columns:7.2em minmax(0,1fr);grid-template-rows:auto auto;column-gap:10px;align-items:center;border-top:0;border-left:4px solid var(--navy);border-radius:0 var(--radius) var(--radius) 0;padding:8px 12px}
+.stat.a-green{border-left-color:var(--green)}
+.stat-v{grid-row:1/3;font-size:26px}.stat-u{display:block;margin:0;font-size:12px}
+.stat-label{margin:0;font-size:15px}.stat-note{font-size:13px}
+.card-p,.log-b,.ag-v,.tbl th,.tbl td{font-size:15px}
+.card-h{font-size:17px}
+.bar{grid-template-columns:7em minmax(0,1fr) auto}.log-t{width:4.5em}.tbl table{min-width:0}}
+@media print{.nav,.more,.totop{display:none}details>*{display:block}.sec{break-inside:avoid-page}}
 """
 
 

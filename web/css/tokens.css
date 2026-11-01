@@ -15,6 +15,7 @@
   --navy-soft:rgba(0,84,167,0.08);
   --error-bg:#FDECEC;
   --track:#F2F5F8;
+  --note:#57534F;                            /* 註記灰加深一階（手機夜間可讀性，2026-11-01） */
   --zebra:#FAFCFE;
   --backdrop:rgba(62,58,57,0.35);
   --drawer-shadow:-4px 0 16px rgba(62,58,57,0.14);

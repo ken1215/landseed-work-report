@@ -196,6 +196,7 @@ def render_sec(i, s):
                           "agenda": lambda: r_agenda(rows, wait), "day": lambda: r_day(rows)}
                          .get(g, lambda: r_table(g, rows))())
             if g == "day" and day in PHOTOS: parts.append(PHOTOS[day])
+            elif s["h1"] in PHOTOS: parts.append(PHOTOS.pop(s["h1"]))  # 節標題為鍵：放在該節第一張表後
     grids = {b["table"]["grid"] for b in s["blocks"] if "table" in b}
     title = re.sub(r"^[一二三四五六七八九十]+、", "", s["h1"])
     badge = '<span class="flag flag-wait">待裁示</span>' if wait else ""

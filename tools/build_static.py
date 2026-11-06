@@ -14,6 +14,17 @@ TOKENS = (ROOT / "web/css/tokens.css").read_text(encoding="utf-8")
 SITE = "https://ken1215.github.io/landseed-work-report/r/"
 COLLAPSE = set()                    # 2026-10-24 使用者：全部預設展開，院長不一定會點開；要恢復收合填 {"role", "day"}
 BAR_C = {"navy", "blue", "green", "red", "grey"}
+PHOTOS = {}                         # ▍日期 → 照片列 HTML（content.json 的 photos，內嵌 base64 保持單檔）
+
+
+def inline_jpg(p, w=900):
+    import base64, io
+    from PIL import Image, ImageOps
+    im = ImageOps.exif_transpose(Image.open(p)).convert("RGB")
+    im.thumbnail((w, w))
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=72)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
 def md(s):
@@ -169,7 +180,9 @@ def sections(blocks):
 def render_sec(i, s):
     wait = pending(s["note"])
     parts = []
+    day = None
     for b in s["blocks"]:
+        if "day" in b: day = b["day"]
         if "stats" in b: parts.append(r_stats(b["stats"]))
         elif "bars" in b: parts.append(r_bars(b["bars"]))
         elif "cap" in b: parts.append(f'<p class="cap">{md(b["cap"])}</p>')
@@ -182,6 +195,7 @@ def render_sec(i, s):
             parts.append({"seq": lambda: r_seq(rows), "decision": lambda: r_decision(rows),
                           "agenda": lambda: r_agenda(rows, wait), "day": lambda: r_day(rows)}
                          .get(g, lambda: r_table(g, rows))())
+            if g == "day" and day in PHOTOS: parts.append(PHOTOS[day])
     grids = {b["table"]["grid"] for b in s["blocks"] if "table" in b}
     title = re.sub(r"^[一二三四五六七八九十]+、", "", s["h1"])
     badge = '<span class="flag flag-wait">待裁示</span>' if wait else ""
@@ -340,6 +354,9 @@ details[open] .more{display:none}
 .ag-v{font-size:14px}
 .day{margin:18px 0 6px;font-size:16px;color:var(--ink)}
 .day::before{content:"▍";color:var(--green)}
+.pics{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:10px 0}
+.pics figure{margin:0}.pics img{width:100%;border-radius:var(--radius);display:block}
+.pics figcaption{font-size:var(--fs-small);color:var(--grey);margin-top:4px}
 .logs{list-style:none;margin:0;padding:0}
 .log{display:flex;gap:12px;padding:8px 4px;border-bottom:1px solid var(--band)}
 .log-t{flex:none;width:6.5em;color:var(--grey);font-size:var(--fs-small);padding-top:2px}
@@ -375,6 +392,10 @@ body{font-size:16px;line-height:1.7}
 def main():
     week = Path(sys.argv[1])
     c = json.loads((week / "_src/content.json").read_text(encoding="utf-8"))
+    for d, ps in c.get("photos", {}).items():
+        PHOTOS[d] = '<div class="pics">' + "".join(
+            f'<figure><img src="{inline_jpg(week / "_src" / p)}" alt="{html.escape(t)}"><figcaption>{md(t)}</figcaption></figure>'
+            for p, t in ps) + "</div>"
     kf = week / "_src/static_key.txt"
     key = kf.read_text().strip() if kf.exists() else secrets.token_urlsafe(16)
     kf.write_text(key)

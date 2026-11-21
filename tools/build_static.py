@@ -113,15 +113,17 @@ def r_bars(rows):
     return '<div class="bars">' + "".join(out) + "</div>"
 
 
-def r_seq(rows):
+def r_seq(rows, h1=""):
     out = []
     for i, (no, proj, item, res) in enumerate(rows[1:]):
         tone = proj_tone(proj)
         flag = '<span class="flag flag-wait">待裁示</span>' if pending(res) else ""
+        vid = VIDEOS.pop(f"{h1}#{no}", "")   # 影片鍵「節標題#序號」：直接接在該張重點卡說明下方
+        if vid: res = res.replace("（影片見網頁版）", "")
         out.append(f'<article class="card hl{" top" if i < 3 else ""}">'
                    f'<div class="card-no">{md(no)}</div><div class="card-body">'
                    f'<div class="card-meta"><span class="chip t-{tone}">{md(proj.replace(chr(10), " "))}</span>{flag}</div>'
-                   f'<h3 class="card-h">{md(item)}</h3><p class="card-p">{md(res)}</p></div></article>')
+                   f'<h3 class="card-h">{md(item)}</h3><p class="card-p">{md(res)}</p>{vid}</div></article>')
     return '<div class="cards">' + "".join(out) + "</div>"
 
 
@@ -193,7 +195,7 @@ def render_sec(i, s):
         elif "footnote" in b: parts.append(f'<p class="foot">{md(b["footnote"])}</p>')
         elif "table" in b:
             g, rows = b["table"]["grid"], b["table"]["rows"]
-            parts.append({"seq": lambda: r_seq(rows), "decision": lambda: r_decision(rows),
+            parts.append({"seq": lambda: r_seq(rows, s["h1"]),"decision": lambda: r_decision(rows),
                           "agenda": lambda: r_agenda(rows, wait), "day": lambda: r_day(rows)}
                          .get(g, lambda: r_table(g, rows))())
             if g == "day" and day in PHOTOS: parts.append(PHOTOS[day])

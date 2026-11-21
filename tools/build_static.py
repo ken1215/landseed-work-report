@@ -15,6 +15,7 @@ SITE = "https://ken1215.github.io/landseed-work-report/r/"
 COLLAPSE = set()                    # 2026-10-24 使用者：全部預設展開，院長不一定會點開；要恢復收合填 {"role", "day"}
 BAR_C = {"navy", "blue", "green", "red", "grey"}
 PHOTOS = {}                         # ▍日期 → 照片列 HTML（content.json 的 photos，內嵌 base64 保持單檔）
+VIDEOS = {}                         # 節標題 → 影片 HTML（content.json 的 videos：[mp4, 封面 jpg, 說明]；mp4 另存 web/r/<key>_v<n>.mp4）
 
 
 def inline_jpg(p, w=900):
@@ -197,6 +198,7 @@ def render_sec(i, s):
                          .get(g, lambda: r_table(g, rows))())
             if g == "day" and day in PHOTOS: parts.append(PHOTOS[day])
             elif s["h1"] in PHOTOS: parts.append(PHOTOS.pop(s["h1"]))  # 節標題為鍵：放在該節第一張表後
+            if s["h1"] in VIDEOS: parts.append(VIDEOS.pop(s["h1"]))   # 影片接在照片之後
     grids = {b["table"]["grid"] for b in s["blocks"] if "table" in b}
     title = re.sub(r"^[一二三四五六七八九十]+、", "", s["h1"])
     badge = '<span class="flag flag-wait">待裁示</span>' if wait else ""
@@ -358,6 +360,8 @@ details[open] .more{display:none}
 .pics{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:10px 0}
 .pics figure{margin:0}.pics img{width:100%;border-radius:var(--radius);display:block}
 .pics figcaption{font-size:var(--fs-small);color:var(--grey);margin-top:4px}
+.vid{margin:14px 0}.vid video{width:100%;aspect-ratio:16/9;background:#000;border-radius:var(--radius);display:block}
+.vid figcaption{font-size:var(--fs-small);color:var(--grey);margin-top:4px}
 .logs{list-style:none;margin:0;padding:0}
 .log{display:flex;gap:12px;padding:8px 4px;border-bottom:1px solid var(--band)}
 .log-t{flex:none;width:6.5em;color:var(--grey);font-size:var(--fs-small);padding-top:2px}
@@ -402,6 +406,18 @@ def main():
     kf.write_text(key)
     out = ROOT / "web/r" / f"{key}.html"
     out.parent.mkdir(exist_ok=True)
+    import shutil
+    n = 0
+    for sec, vs in c.get("videos", {}).items():
+        figs = []
+        for mp4, poster, cap in vs:
+            n += 1
+            name = f"{key}_v{n}.mp4"
+            shutil.copyfile(week / "_src" / mp4, out.parent / name)
+            figs.append(f'<figure class="vid"><video controls playsinline preload="none" '
+                        f'poster="{inline_jpg(week / "_src" / poster, 1280)}" src="{name}"></video>'
+                        f'<figcaption>{md(cap)}</figcaption></figure>')
+        VIDEOS[sec] = "".join(figs)
     out.write_text(build(c), encoding="utf-8")
     print(out)
     print(SITE + key + ".html")

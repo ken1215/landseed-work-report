@@ -15,7 +15,7 @@ SITE = "https://ken1215.github.io/landseed-work-report/r/"
 COLLAPSE = set()                    # 2026-10-24 使用者：全部預設展開，院長不一定會點開；要恢復收合填 {"role", "day"}
 BAR_C = {"navy", "blue", "green", "red", "grey"}
 PHOTOS = {}                         # ▍日期 → 照片列 HTML（content.json 的 photos，內嵌 base64 保持單檔）
-DEXIN = "--dexin" in sys.argv       # 雙品牌頁首：左聯新 CIS（保留）、右德新物業標誌（2026-11-21 使用者要求試看）
+DEXIN = "--no-dexin" not in sys.argv  # 雙品牌頁首（左聯新 CIS 必留、右德新物業）；2026-11-21 使用者認可後改為預設，要單品牌加 --no-dexin
 DEXIN_MARK = ('<svg class="dx-mark" viewBox="34 32 68 74" aria-hidden="true">'
               '<path d="M52 104 C40 96 34 82 36 68 C38 54 48 44 62 42 C60 56 56 66 50 76 C46 84 46 96 52 104 Z" fill="var(--blue)"/>'
               '<path d="M56 96 C58 74 70 50 98 34 C86 58 78 78 66 92 C63 96 59 98 56 96 Z" fill="var(--sprout)"/></svg>')
@@ -125,7 +125,7 @@ def r_seq(rows, h1=""):
     for i, (no, proj, item, res) in enumerate(rows[1:]):
         tone = proj_tone(proj)
         flag = '<span class="flag flag-wait">待裁示</span>' if pending(res) else ""
-        vid = VIDEOS.pop(f"{h1}#{no}", "")   # 影片鍵「節標題#序號」：直接接在該張重點卡說明下方
+        vid = PHOTOS.pop(f"{h1}#{no}", "") + VIDEOS.pop(f"{h1}#{no}", "")   # 鍵「節標題#序號」：照片／影片直接接在該張重點卡說明下方
         if vid: res = res.replace("（影片見網頁版）", "")
         out.append(f'<article class="card hl{" top" if i < 3 else ""}">'
                    f'<div class="card-no">{md(no)}</div><div class="card-body">'
@@ -412,8 +412,10 @@ body{font-size:16px;line-height:1.7}
 def main():
     week = Path(sys.argv[1])
     c = json.loads((week / "_src/content.json").read_text(encoding="utf-8"))
+    anchor = c.get("web_anchor", {})     # 網頁版照片改掛重點卡：{"節標題": "03"}（docx 不讀此鍵）
     for d, ps in c.get("photos", {}).items():
-        PHOTOS[d] = '<div class="pics">' + "".join(
+        if d in anchor: d = f"{d}#{anchor[d]}"
+        PHOTOS[d] ='<div class="pics">' + "".join(
             f'<figure><img src="{inline_jpg(week / "_src" / p)}" alt="{html.escape(t)}"><figcaption>{md(t)}</figcaption></figure>'
             for p, t in ps) + "</div>"
     kf = week / "_src/static_key.txt"

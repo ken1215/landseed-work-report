@@ -404,6 +404,8 @@ def main():
             f'<figure><img src="{inline_jpg(week / "_src" / p)}" alt="{html.escape(t)}"><figcaption>{md(t)}</figcaption></figure>'
             for p, t in ps) + "</div>"
     kf = week / "_src/static_key.txt"
+    if "--preview" in sys.argv:   # 試看版：另產一把 key 存 _src/preview_key.txt，不動正式網址
+        kf = week / "_src/preview_key.txt"
     key = kf.read_text().strip() if kf.exists() else secrets.token_urlsafe(16)
     kf.write_text(key)
     out = ROOT / "web/r" / f"{key}.html"

@@ -1,7 +1,8 @@
 /* CIS token：全站唯一允許出現色值字面的檔（值來自 render.py） */
 :root {
   --navy:#0054A7; --blue:#008CD6; --green:#009C42; --light:#EFF6FC; --grey:#6E6A67;
-  --red:#C00000; --band:#D9E4EE; --ink:#3E3A39; --headfill:#D3EDFB;
+  --sprout:#8FC31F;                          /* 德新物業新芽綠（雙品牌頁首用） */
+  --red:#C00000;--band:#D9E4EE; --ink:#3E3A39; --headfill:#D3EDFB;
   --thead-bg:#EAF2F9; --thead-fg:#0054A7; --white:#FFFFFF;
   --bg:#FFFFFF; --bg-muted:#EFF6FC;          /* body 背景須明確設 var(--bg) */
   --font-sans:"Microsoft JhengHei","微軟正黑體","PingFang TC","Noto Sans TC",sans-serif;

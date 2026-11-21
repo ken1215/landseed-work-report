@@ -15,7 +15,14 @@ SITE = "https://ken1215.github.io/landseed-work-report/r/"
 COLLAPSE = set()                    # 2026-10-24 使用者：全部預設展開，院長不一定會點開；要恢復收合填 {"role", "day"}
 BAR_C = {"navy", "blue", "green", "red", "grey"}
 PHOTOS = {}                         # ▍日期 → 照片列 HTML（content.json 的 photos，內嵌 base64 保持單檔）
-VIDEOS = {}                         # 節標題 → 影片 HTML（content.json 的 videos：[mp4, 封面 jpg, 說明]；mp4 另存 web/r/<key>_v<n>.mp4）
+DEXIN = "--dexin" in sys.argv       # 雙品牌頁首：左聯新 CIS（保留）、右德新物業標誌（2026-11-21 使用者要求試看）
+DEXIN_MARK = ('<svg class="dx-mark" viewBox="34 32 68 74" aria-hidden="true">'
+              '<path d="M52 104 C40 96 34 82 36 68 C38 54 48 44 62 42 C60 56 56 66 50 76 C46 84 46 96 52 104 Z" fill="var(--blue)"/>'
+              '<path d="M56 96 C58 74 70 50 98 34 C86 58 78 78 66 92 C63 96 59 98 56 96 Z" fill="var(--sprout)"/></svg>')
+HEADER_DEXIN = ('<header class="brand brand-dx"><img src="../img/logo-cis.png" alt="LANDSEED 聯新國際醫療集團">'
+                f'<div class="dx" aria-label="報告單位 德新物業">{DEXIN_MARK}'
+                '<div class="dx-t"><b>德新物業</b><span>LANDSEED PROPERTY</span></div></div></header>')
+VIDEOS = {}                       # 節標題 → 影片 HTML（content.json 的 videos：[mp4, 封面 jpg, 說明]；mp4 另存 web/r/<key>_v<n>.mp4）
 
 
 def inline_jpg(p, w=900):
@@ -237,7 +244,7 @@ def build(c):
 <title>{html.escape(c["title"])}｜{html.escape(c["period"])}</title>
 <style>{TOKENS}{CSS}</style></head>
 <body>
-<header class="brand"><img src="../img/logo-cis.png" alt="LANDSEED 聯新國際醫療集團"></header>
+{HEADER_DEXIN if DEXIN else '<header class="brand"><img src="../img/logo-cis.png" alt="LANDSEED 聯新國際醫療集團"></header>'}
 <main class="wrap" id="top">
 <div class="head"><h1>{html.escape(c["title"])}</h1>
 <p class="period">{html.escape(c["period"])}{term_tag}</p>
@@ -245,7 +252,7 @@ def build(c):
 {glance}</div>
 <nav class="nav" id="nav">{nav}</nav>
 {"".join(h for h, _ in rendered)}
-<p class="copy">Copyright © Landseed International Medical Group　本頁僅供提報對象閱覽</p>
+<p class="copy">{'報告單位：德新物業 LANDSEED PROPERTY　｜　' if DEXIN else ''}Copyright © Landseed International Medical Group　本頁僅供提報對象閱覽</p>
 </main>
 <a class="totop" href="#top" aria-label="回到頂端">↑</a>
 <script>{JS}</script></body></html>"""
@@ -285,6 +292,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans)
 .brand{position:relative;padding:12px 16px;background:var(--bg)}
 .brand::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--navy),var(--blue) 55%,var(--green))}
 .brand img{height:var(--logo-h);width:auto;display:block}
+.brand-dx{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand-dx::after{background:linear-gradient(90deg,var(--navy),var(--blue) 55%,var(--sprout))}
+.dx{display:flex;align-items:center;gap:8px;padding-left:12px;border-left:2px solid var(--band)}
+.dx-mark{height:34px;width:auto;flex:none}
+.dx-t{display:flex;flex-direction:column;line-height:1.15;color:var(--navy)}
+.dx-t b{font-size:16px;letter-spacing:.08em}.dx-t span{font-size:10px;letter-spacing:.12em}
 .petal{width:.8em;height:.8em;margin-right:6px;vertical-align:-.05em;flex:none}
 .term{display:inline-block;margin-left:10px;padding:0 10px;border:1px solid var(--green);border-radius:999px;color:var(--green);font-size:12px;font-weight:700;line-height:1.9;vertical-align:2px;letter-spacing:.08em}
 .nav a i{font-style:normal;margin-right:4px;color:var(--blue);font-weight:700}

@@ -20,6 +20,7 @@ BAR_C = {"navy", "blue", "green", "red", "grey"}
 PHOTOS = {}                         # ▍日期／節標題／節標題#序號 → 照片列 HTML（內嵌 base64 保持單檔）
 VIDEOS = {}                         # 節標題／節標題#序號 → 影片 HTML（mp4 另存 web/r/<key>_v<n>.mp4）
 DEXIN = "--no-dexin" not in sys.argv
+KEY = ""                            # 本頁亂碼檔名；帶給系統建置專區當「回到工作報告」的去處
 DEXIN_MARK = ('<svg class="dx-mark" viewBox="34 32 68 74" aria-hidden="true">'
               '<path d="M52 104 C40 96 34 82 36 68 C38 54 48 44 62 42 C60 56 56 66 50 76 C46 84 46 96 52 104 Z" fill="var(--blue)"/>'
               '<path d="M56 96 C58 74 70 50 98 34 C86 58 78 78 66 92 C63 96 59 98 56 96 Z" fill="var(--sprout)"/></svg>')
@@ -309,7 +310,7 @@ def build(c):
                   for i, (_, t) in enumerate(rendered))
     zk = ROOT / "tools/systems_key.txt"   # 系統建置專區（build_systems.py 產生）；有就在章節列尾端掛連結
     if zk.exists():
-        nav += f'<a class="zone-link" href="{zk.read_text().strip()}.html">系統建置專區 →</a>'
+        nav += f'<a class="zone-link" href="{zk.read_text().strip()}.html?from={KEY}">系統建置專區 →</a>'
     dx = (f'<div class="dx" aria-label="報告單位 德新物業">{DEXIN_MARK}<b>德新物業</b></div>' if DEXIN else "")
     return f"""<!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8">
@@ -516,6 +517,8 @@ def main():
         kf = week / "_src/preview_key.txt"
     key = kf.read_text().strip() if kf.exists() else secrets.token_urlsafe(16)
     kf.write_text(key)
+    global KEY
+    KEY = key
     out = ROOT / "web/r" / f"{key}.html"
     out.parent.mkdir(exist_ok=True)
     import shutil

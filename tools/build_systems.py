@@ -26,6 +26,9 @@ EXTRA = """
 .sys-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .sys-date{font-size:13px;color:var(--mute)}
 .sys ul{list-style:disc;padding-left:1.3em;color:var(--sub);display:flex;flex-direction:column;gap:4px}
+.back{display:none;align-self:flex-start;align-items:center;gap:8px;min-height:48px;padding:10px 22px;border-radius:999px;background:var(--navy);color:var(--white);text-decoration:none;font-weight:700;font-size:16px}
+.back.show{display:inline-flex}
+.back-fix{position:fixed;left:16px;bottom:20px;z-index:6;box-shadow:var(--card-shadow)}
 .toc{display:flex;flex-wrap:wrap;gap:8px}
 .toc a{min-height:44px;padding:9px 18px;border-radius:999px;background:var(--white);border:1px solid var(--pill-line);color:var(--ink2);text-decoration:none;font-weight:500;font-size:15px}
 @media (max-width:820px){.sys{grid-template-columns:1fr;padding:20px;gap:18px}.sys-h{font-size:22px}}
@@ -49,6 +52,7 @@ def main():
         else:
             name = f"{key}_{s['id']}.mp4"
             shutil.copyfile(zone / v, rdir / name)
+            name += f"?v={(zone / v).stat().st_size}"      # 換片後避開瀏覽器舊快取
         pts = "".join(f"<li>{md(p)}</li>" for p in s.get("points", []))
         cards.append(
             f'<article class="sys" id="{html.escape(s["id"])}"><div class="sys-t">'
@@ -78,10 +82,15 @@ def main():
 <p>{md(c["intro"])}</p></div>
 <div class="tiles"><div class="tile"><span class="tile-l">已收錄系統</span><span class="tile-v navy"><b>{len(cards)}</b> <i>套</i></span></div></div></div></section>
 <main class="in zone">
+<a class="back" href="#">← 回到工作報告</a>
 <nav class="toc" aria-label="系統清單">{"".join(toc)}</nav>
 {"".join(cards)}
 </main>
+<a class="back back-fix" href="#">← 回到工作報告</a>
 <footer class="copy"><div class="in">報告單位：德新物業 LANDSEED PROPERTY　｜　Copyright © Landseed International Medical Group　本頁僅供提報對象閱覽</div></footer>
+<script>(function(){{var m=/[?&]from=([\\w-]{{10,40}})/.exec(location.search),bs=document.querySelectorAll('.back'),fx=bs[1];
+if(!m)return;bs[0].href=fx.href=m[1]+'.html';bs[0].classList.add('show');
+addEventListener('scroll',function(){{fx.classList.toggle('show',scrollY>500);}},{{passive:true}});}})();</script>
 </body></html>"""
     out = rdir / f"{key}.html"
     out.write_text(page, encoding="utf-8")

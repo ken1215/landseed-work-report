@@ -21,4 +21,15 @@
   --backdrop:rgba(62,58,57,0.35);
   --drawer-shadow:-4px 0 16px rgba(62,58,57,0.14);
   --sheet-shadow:0 -4px 16px rgba(62,58,57,0.18);
+
+  /* 2026-11-25 單向報告頁改版（build_static.py）：冷調淺底＋客家四季主題 */
+  --ground:#F5F8FA; --ink2:#1F2A33; --ink-strong:#12202B; --sub:#3B4852; --mute:#51606B;
+  --line:#DCE5EC; --line2:#E3EAF0; --pill-line:#C9D6E0; --grey-tint:#ECEFF2; --weekend:#EDF1F4;
+  --navy-tint:#E8F1F9; --navy-ink:#12314F; --green-deep:#00703A; --green-tint:#E6F4EC;
+  --amber:#9A4B00; --amber-tint:#FFF1DD; --amber-dot:#C96A00; --amber-ink:#5C3300;
+  --card-shadow:0 6px 24px rgba(18,32,43,.08);
+  --sp-tint:#FBEFF2; --sp-accent:#A03058; --sp-petal:#FFFFFF; --sp-core:#D9486E;   /* 春・桐花 */
+  --su-tint:#E6EEF7; --su-accent:#1F4E8C; --su-petal:#5E8FCB; --su-core:#FFFFFF;   /* 夏・藍衫 */
+  --au-tint:#FFF1DD; --au-accent:#9A4B00; --au-petal:#F0A04B; --au-core:#FFF7EA;   /* 秋・柿染 */
+  --wi-tint:#EEF3E6; --wi-accent:#4F6B1F; --wi-petal:#A9C27A; --wi-core:#F7FAF0;   /* 冬・擂茶 */
 }

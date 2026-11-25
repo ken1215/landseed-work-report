@@ -307,6 +307,9 @@ def build(c):
     sm_html = (f'<section class="sum" aria-label="三十秒摘要"><h2>30 秒看完本週</h2><ul>{sm}</ul></section>' if sm else "")
     nav = "".join(f'<a href="#s{i+1}" title="{html.escape(t)}">{i+1:02d} {html.escape(short_title(t))}</a>'
                   for i, (_, t) in enumerate(rendered))
+    zk = ROOT / "tools/systems_key.txt"   # 系統建置專區（build_systems.py 產生）；有就在章節列尾端掛連結
+    if zk.exists():
+        nav += f'<a class="zone-link" href="{zk.read_text().strip()}.html">系統建置專區 →</a>'
     dx = (f'<div class="dx" aria-label="報告單位 德新物業">{DEXIN_MARK}<b>德新物業</b></div>' if DEXIN else "")
     return f"""<!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8">
@@ -335,7 +338,7 @@ def build(c):
 
 
 JS = """
-(function(){var nav=document.getElementById('nav'),links=[].slice.call(nav.querySelectorAll('a')),
+(function(){var nav=document.getElementById('nav'),links=[].slice.call(nav.querySelectorAll('a:not(.zone-link)')),
 secs=[].slice.call(document.querySelectorAll('.sec')),t=document.querySelector('.totop'),cur=-1,tick=0;
 function upd(){tick=0;var k=-1;for(var i=0;i<secs.length;i++){if(secs[i].getBoundingClientRect().top<=140)k=i;}
 if(k!==cur){if(cur>=0)links[cur].classList.remove('on');cur=k;if(k>=0){var a=links[k];a.classList.add('on');
@@ -396,6 +399,7 @@ main.in{display:flex;flex-direction:column;gap:56px;padding-bottom:64px}
 .sum:first-child{margin-top:-20px}main.in>.nav:first-child{margin-top:32px}
 .nav{position:sticky;top:0;z-index:5;display:flex;gap:8px;overflow-x:auto;padding:8px 0;margin:-8px 0;background:var(--ground);scrollbar-width:none}
 .nav a{flex:none;min-height:44px;padding:9px 18px;border-radius:999px;background:var(--white);border:1px solid var(--pill-line);color:var(--ink2);text-decoration:none;font-weight:500;font-size:15px;white-space:nowrap}
+.nav a.zone-link{border-color:var(--navy);color:var(--navy);font-weight:700}
 .nav a.on{background:var(--navy);border-color:var(--navy);color:var(--white);font-weight:700}
 .totop{position:fixed;right:16px;bottom:20px;z-index:6;width:44px;height:44px;border-radius:50%;background:var(--navy);color:var(--white);font-size:20px;line-height:44px;text-align:center;text-decoration:none;opacity:0;pointer-events:none;transition:opacity .2s}
 .totop.show{opacity:.9;pointer-events:auto}

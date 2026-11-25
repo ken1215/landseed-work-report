@@ -309,8 +309,12 @@ def build(c):
     nav = "".join(f'<a href="#s{i+1}" title="{html.escape(t)}">{i+1:02d} {html.escape(short_title(t))}</a>'
                   for i, (_, t) in enumerate(rendered))
     zk = ROOT / "tools/systems_key.txt"   # 系統建置專區（build_systems.py 產生）；有就在章節列尾端掛連結
+    cta = ""                              # 手機版章節列要橫向滑到底才看得到連結，另放一顆整寬入口在章節列上方
     if zk.exists():
-        nav += f'<a class="zone-link" href="{zk.read_text().strip()}.html?from={KEY}">系統建置專區 →</a>'
+        zurl = f"{zk.read_text().strip()}.html?from={KEY}"
+        nav += f'<a class="zone-link" href="{zurl}">系統建置專區 →</a>'
+        cta = (f'<a class="zone-cta" href="{zurl}"><span><b>系統建置專區</b><i>歷次系統說明影片</i></span>'
+               f'<span class="zc-go" aria-hidden="true">→</span></a>')
     dx = (f'<div class="dx" aria-label="報告單位 德新物業">{DEXIN_MARK}<b>德新物業</b></div>' if DEXIN else "")
     return f"""<!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8">
@@ -330,6 +334,7 @@ def build(c):
 <div class="tiles">{tiles}</div></div></section>
 <main class="in">
 {sm_html}
+{cta}
 <nav class="nav" id="nav" aria-label="章節">{nav}</nav>
 {"".join(h for h, _ in rendered)}
 </main>
@@ -401,6 +406,7 @@ main.in{display:flex;flex-direction:column;gap:56px;padding-bottom:64px}
 .nav{position:sticky;top:0;z-index:5;display:flex;gap:8px;overflow-x:auto;padding:8px 0;margin:-8px 0;background:var(--ground);scrollbar-width:none}
 .nav a{flex:none;min-height:44px;padding:9px 18px;border-radius:999px;background:var(--white);border:1px solid var(--pill-line);color:var(--ink2);text-decoration:none;font-weight:500;font-size:15px;white-space:nowrap}
 .nav a.zone-link{border-color:var(--navy);color:var(--navy);font-weight:700}
+.zone-cta{display:none}
 .nav a.on{background:var(--navy);border-color:var(--navy);color:var(--white);font-weight:700}
 .totop{position:fixed;right:16px;bottom:20px;z-index:6;width:44px;height:44px;border-radius:50%;background:var(--navy);color:var(--white);font-size:20px;line-height:44px;text-align:center;text-decoration:none;opacity:0;pointer-events:none;transition:opacity .2s}
 .totop.show{opacity:.9;pointer-events:auto}
@@ -497,9 +503,14 @@ main.in{gap:36px;padding-bottom:40px}
 .grp{padding:20px}.gi-h{font-size:19px}.card{padding:20px}
 .dec-b{padding:20px 20px 16px}.dec-next{padding:12px 20px}
 .week{grid-template-columns:1fr}
+.nav a.zone-link{display:none}
+.zone-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;margin-bottom:-16px;padding:12px 18px;border-radius:14px;background:var(--navy);color:var(--white);text-decoration:none}
+.zone-cta span:first-child{display:flex;flex-direction:column}
+.zone-cta b{font-size:17px;font-weight:700}.zone-cta i{font-style:normal;font-size:13px;opacity:.85}
+.zc-go{font-size:22px;font-weight:700}
 .tbl table{min-width:560px}.tbl th,.tbl td{padding:12px 16px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}html{scroll-behavior:auto}}
-@media print{.nav,.totop,.petals{display:none}.sec{break-inside:avoid-page}}
+@media print{.zone-cta,.nav,.totop,.petals{display:none}.sec{break-inside:avoid-page}}
 """
 
 

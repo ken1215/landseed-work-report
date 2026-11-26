@@ -369,7 +369,7 @@ def build(c):
 <div class="tags"><span class="kind">{html.escape(c["title"])}</span>{f'<span class="term">{html.escape(term)}｜{sname}</span>' if term else ''}</div>
 <h1>{h1}</h1>
 <p>{html.escape(c["period"])}</p>
-<p>提報對象　{html.escape(c["to"])}　｜　報告人　{html.escape(c["from"])}</p></div>
+<p>提報對象　<b class="to">{html.escape(c["to"])}</b>　｜　報告人　{html.escape(c["from"])}</p></div>
 <div class="tiles">{tiles}</div></div></section>
 <main class="in">
 {sm_html}
@@ -422,6 +422,7 @@ a{color:var(--navy)}
 .hero-in{position:relative;display:flex;flex-wrap:wrap;gap:32px;align-items:flex-end;padding-top:88px;padding-bottom:40px}
 .hero-t{flex:999 1 420px;min-width:0;display:flex;flex-direction:column;gap:10px;font-size:15px;color:var(--sub)}
 .tags{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hero-t .to{font-weight:900;font-size:17px;color:var(--ink-strong)}
 .kind{font-size:14px;font-weight:700;letter-spacing:.08em;color:var(--accent)}
 .term{font-size:13px;font-weight:500;padding:3px 12px;border-radius:999px;background:var(--white);color:var(--accent)}
 .hero h1{font-size:52px;line-height:1.15;font-weight:900;color:var(--ink-strong)}

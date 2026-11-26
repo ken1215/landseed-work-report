@@ -317,10 +317,15 @@ ICONS = {   # 入口卡圖示（24×24 線條，色跟著 currentColor）
 ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="{d}"/></svg>'
 
 
+def with_from(url):
+    return url + ("&" if "?" in url else "?") + "from=" + KEY
+
+
 def entry_card(url, label, sub, icon, ext):
     """入口卡：左色帶＋圖示、標題與說明、右側深藍「點此開啟」鈕；ext=True 另開分頁（箭頭改右上）。"""
     go = ARROW.format(d="M7 17 17 7M9 7h8v8" if ext else "M5 12h14M13 6l6 6-6 6")
-    tgt = ' target="_blank" rel="noopener"' if ext else ""
+    tgt = ""
+    if ext: url = with_from(url)   # 同分頁開啟＋帶來源頁 key：瀏覽器上一頁可回來，對方站也能顯示「回到工作報告」
     return (f'<a class="zone-cta{" ext" if ext else ""}" href="{html.escape(url)}"{tgt}>'
             f'<span class="zc-ic"><svg viewBox="0 0 24 24" aria-hidden="true">{ICONS.get(icon, ICONS["report"])}</svg></span>'
             f'<span class="zc-t"><b>{html.escape(label)}</b><i>{html.escape(sub)}</i></span>'
@@ -607,11 +612,6 @@ def main():
         PHOTOS[d] = '<div class="pics">' + "".join(
             f'<figure><img src="{inline_jpg(week / "_src" / p)}" alt="{html.escape(t)}"><figcaption>{md(t)}</figcaption></figure>'
             for p, t in ps) + "</div>"
-    for k, ls in c.get("links", {}).items():
-        LINKS[k] = "".join(f'<a class="card-link" href="{html.escape(u)}" target="_blank" rel="noopener">'
-                           f'<span class="cl-ic"><svg viewBox="0 0 24 24" aria-hidden="true">{ICONS["report"]}</svg></span>'
-                           f'<span class="cl-t">{md(t)}</span>'
-                           f'<span class="cl-go">點此開啟{ARROW.format(d="M7 17 17 7M9 7h8v8")}</span></a>' for t, u in ls)
     kf = week / "_src/static_key.txt"
     if "--preview" in sys.argv:   # 試看版：另產一把 key 存 _src/preview_key.txt，不動正式網址
         kf = week / "_src/preview_key.txt"
@@ -619,6 +619,11 @@ def main():
     kf.write_text(key)
     global KEY
     KEY = key
+    for k, ls in c.get("links", {}).items():
+        LINKS[k] = "".join(f'<a class="card-link" href="{html.escape(with_from(u))}">'
+                           f'<span class="cl-ic"><svg viewBox="0 0 24 24" aria-hidden="true">{ICONS["report"]}</svg></span>'
+                           f'<span class="cl-t">{md(t)}</span>'
+                           f'<span class="cl-go">點此開啟{ARROW.format(d="M7 17 17 7M9 7h8v8")}</span></a>' for t, u in ls)
     out = ROOT / "web/r" / f"{key}.html"
     out.parent.mkdir(exist_ok=True)
     import shutil

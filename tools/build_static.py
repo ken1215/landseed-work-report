@@ -346,14 +346,14 @@ def build(c):
         zurl = f"{zk.read_text().strip()}.html?from={KEY}"
         nav += f'<a class="zone-link" href="{zurl}">系統建置專區 →</a>'
         cta = (f'<a class="zone-cta" href="{zurl}"><span><b>系統建置專區</b><i>歷次系統說明影片</i></span>'
-               f'<span class="zc-go" aria-hidden="true">→</span></a>')
+               f'<span class="zc-go">點此開啟 <b aria-hidden="true">→</b></span></a>')
     lk = ROOT / "tools/links.json"        # 常設外部連結（如板新施工日報網站）：章節列尾端＋手機整寬入口，另開分頁
     if lk.exists():
         for x in json.loads(lk.read_text(encoding="utf-8")):
             u, lab, sub = html.escape(x["url"]), html.escape(x["label"]), html.escape(x.get("sub", ""))
             nav += f'<a class="zone-link" href="{u}" target="_blank" rel="noopener">{lab} ↗</a>'
             cta += (f'<a class="zone-cta" href="{u}" target="_blank" rel="noopener"><span><b>{lab}</b><i>{sub}</i></span>'
-                    f'<span class="zc-go" aria-hidden="true">↗</span></a>')
+                    f'<span class="zc-go">點此開啟 <b aria-hidden="true">↗</b></span></a>')
     dx = (f'<div class="dx" aria-label="報告單位 德新物業">{DEXIN_MARK}<b>德新物業</b></div>' if DEXIN else "")
     return f"""<!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8">{'<meta name="preview" content="1">' if "--preview" in sys.argv else ''}
@@ -373,7 +373,7 @@ def build(c):
 <div class="tiles">{tiles}</div></div></section>
 <main class="in">
 {sm_html}
-{cta}
+{f'<div class="ctas">{cta}</div>' if cta else ''}
 <nav class="nav" id="nav" aria-label="章節">{nav}</nav>
 {"".join(h for h, _ in rendered)}
 {past}
@@ -446,9 +446,17 @@ main.in{display:flex;flex-direction:column;gap:56px;padding-bottom:64px}
 .nav{position:sticky;top:0;z-index:5;display:flex;gap:8px;overflow-x:auto;padding:8px 0;margin:-8px 0;background:var(--ground);scrollbar-width:none}
 .nav a{flex:none;min-height:44px;padding:9px 18px;border-radius:999px;background:var(--white);border:1px solid var(--pill-line);color:var(--ink2);text-decoration:none;font-weight:500;font-size:15px;white-space:nowrap}
 .nav a.zone-link{border-color:var(--navy);color:var(--navy);font-weight:700}
-.zone-cta{display:none}
-.card-link{display:flex;width:fit-content;max-width:100%;align-items:center;gap:6px;min-height:44px;margin-top:12px;padding:8px 18px;border-radius:999px;border:1px solid var(--navy);color:var(--navy);font-weight:700;font-size:15px;text-decoration:none}
-.card-link:hover{background:var(--navy-tint)}
+.ctas{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px}
+.zone-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;padding:14px 22px;border-radius:14px;background:var(--navy);color:var(--white);text-decoration:none;box-shadow:var(--card-shadow);transition:transform .15s,background .15s}
+.zone-cta:hover{background:var(--blue);transform:translateY(-2px)}
+.zone-cta span:first-child{display:flex;flex-direction:column}
+.zone-cta b{font-size:18px;font-weight:700}.zone-cta i{font-style:normal;font-size:14px;opacity:.9}
+.zc-go{flex:none;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;padding:6px 14px;border-radius:999px;background:var(--white);color:var(--navy)}
+.zc-go b{font-size:16px}
+.nav a.zone-link{display:none}
+.card-link{display:flex;width:fit-content;max-width:100%;align-items:center;gap:12px;min-height:52px;margin-top:16px;padding:10px 12px 10px 22px;border-radius:999px;background:var(--navy);color:var(--white);font-weight:700;font-size:17px;text-decoration:none;box-shadow:var(--card-shadow);transition:transform .15s,background .15s}
+.card-link:hover{background:var(--blue);transform:translateY(-2px)}
+.cl-go{flex:none;font-size:14px;padding:6px 14px;border-radius:999px;background:var(--white);color:var(--navy)}
 .nav a.on{background:var(--navy);border-color:var(--navy);color:var(--white);font-weight:700}
 .totop{position:fixed;right:16px;bottom:20px;z-index:6;width:44px;height:44px;border-radius:50%;background:var(--navy);color:var(--white);font-size:20px;line-height:44px;text-align:center;text-decoration:none;opacity:0;pointer-events:none;transition:opacity .2s}
 .totop.show{opacity:.9;pointer-events:auto}
@@ -555,15 +563,10 @@ main.in{gap:36px;padding-bottom:40px}
 .grp{padding:20px}.gi-h{font-size:19px}.card{padding:20px}
 .dec-b{padding:20px 20px 16px}.dec-next{padding:12px 20px}
 .week{grid-template-columns:1fr}
-.nav a.zone-link{display:none}
-.zone-cta+.zone-cta{margin-top:-8px}
-.zone-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;margin-bottom:-16px;padding:12px 18px;border-radius:14px;background:var(--navy);color:var(--white);text-decoration:none}
-.zone-cta span:first-child{display:flex;flex-direction:column}
-.zone-cta b{font-size:17px;font-weight:700}.zone-cta i{font-style:normal;font-size:13px;opacity:.85}
-.zc-go{font-size:22px;font-weight:700}
+.ctas{margin-bottom:-16px}.zone-cta{padding:12px 16px}.card-link{width:100%;justify-content:space-between;font-size:16px}
 .tbl table{min-width:560px}.tbl th,.tbl td{padding:12px 16px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}html{scroll-behavior:auto}}
-@media print{.zone-cta,.nav,.totop,.petals{display:none}.sec{break-inside:avoid-page}}
+@media print{.ctas,.card-link,.zone-cta,.nav,.totop,.petals{display:none}.sec{break-inside:avoid-page}}
 """
 
 
@@ -577,7 +580,7 @@ def main():
             f'<figure><img src="{inline_jpg(week / "_src" / p)}" alt="{html.escape(t)}"><figcaption>{md(t)}</figcaption></figure>'
             for p, t in ps) + "</div>"
     for k, ls in c.get("links", {}).items():
-        LINKS[k] = "".join(f'<a class="card-link" href="{html.escape(u)}" target="_blank" rel="noopener">{md(t)} ↗</a>' for t, u in ls)
+        LINKS[k] = "".join(f'<a class="card-link" href="{html.escape(u)}" target="_blank" rel="noopener"><span>{md(t)}</span><span class="cl-go">點此開啟 ↗</span></a>' for t, u in ls)
     kf = week / "_src/static_key.txt"
     if "--preview" in sys.argv:   # 試看版：另產一把 key 存 _src/preview_key.txt，不動正式網址
         kf = week / "_src/preview_key.txt"

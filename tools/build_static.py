@@ -6,6 +6,8 @@
 - 2026-11-25 改版（使用者於 Design 畫布定案；舊版＝git tag design-v3-20261121，回滾還原本檔與 tokens.css）：
   聯新 LOGO 大、德新略小；頁首依節氣換客家四季主題（春桐花／夏藍衫／秋柿染／冬擂茶）＋飄動花朵；
   「30 秒看完本週」摘要；決議節提前到重點之後；重點同專案併組；行程改一週橫向對照。
+- 2026-11-26：tools/links.json（[{"label","sub","url"}]）＝常設外部連結，章節列尾端＋手機整寬入口，每期自動帶出（首筆：板新施工日報）；
+  content.json 選填鍵 "links": {"節標題#序號": [["按鈕文字", "網址"], …]} → 該張重點卡下方的連結鈕（docx 不讀）。
 - content.json 新增兩個選填鍵（docx 不讀）：
   "summary": [["完成"|"留意"|"進行", "一句話"], …]   → 30 秒摘要；「留意」會計入頁首數字卡
   "hero_stats": [{"label": "板新累計出工", "v": "732", "u": "人日"}, …] → 頁首數字卡（純數字會跑數）
@@ -19,6 +21,7 @@ SITE = "https://ken1215.github.io/landseed-work-report/r/"
 BAR_C = {"navy", "blue", "green", "red", "grey"}
 PHOTOS = {}                         # ▍日期／節標題／節標題#序號 → 照片列 HTML（內嵌 base64 保持單檔）
 VIDEOS = {}                         # 節標題／節標題#序號 → 影片 HTML（mp4 另存 web/r/<key>_v<n>.mp4）
+LINKS = {}                          # 節標題#序號 → 重點卡下方的外部連結鈕（content.json "links"；docx 不讀）
 DEXIN = "--no-dexin" not in sys.argv
 KEY = ""                            # 本頁亂碼檔名；帶給系統建置專區當「回到工作報告」的去處
 DEXIN_MARK = ('<svg class="dx-mark" viewBox="34 32 68 74" aria-hidden="true">'
@@ -126,7 +129,7 @@ def r_seq(rows, h1=""):
     groups = []
     for no, proj, item, res in rows[1:]:
         proj = proj.replace("\n", " ")
-        media = PHOTOS.pop(f"{h1}#{no}", "") + VIDEOS.pop(f"{h1}#{no}", "")   # 鍵「節標題#序號」
+        media = PHOTOS.pop(f"{h1}#{no}", "") + VIDEOS.pop(f"{h1}#{no}", "") + LINKS.pop(f"{h1}#{no}", "")   # 鍵「節標題#序號」
         if media: res = res.replace("（影片見網頁版）", "").replace("，現況照片如下", "")
         flag = '<span class="flag flag-wait">待裁示</span>' if pending(res) else ""
         if groups and groups[-1][0] == proj:
@@ -344,6 +347,13 @@ def build(c):
         nav += f'<a class="zone-link" href="{zurl}">系統建置專區 →</a>'
         cta = (f'<a class="zone-cta" href="{zurl}"><span><b>系統建置專區</b><i>歷次系統說明影片</i></span>'
                f'<span class="zc-go" aria-hidden="true">→</span></a>')
+    lk = ROOT / "tools/links.json"        # 常設外部連結（如板新施工日報網站）：章節列尾端＋手機整寬入口，另開分頁
+    if lk.exists():
+        for x in json.loads(lk.read_text(encoding="utf-8")):
+            u, lab, sub = html.escape(x["url"]), html.escape(x["label"]), html.escape(x.get("sub", ""))
+            nav += f'<a class="zone-link" href="{u}" target="_blank" rel="noopener">{lab} ↗</a>'
+            cta += (f'<a class="zone-cta" href="{u}" target="_blank" rel="noopener"><span><b>{lab}</b><i>{sub}</i></span>'
+                    f'<span class="zc-go" aria-hidden="true">↗</span></a>')
     dx = (f'<div class="dx" aria-label="報告單位 德新物業">{DEXIN_MARK}<b>德新物業</b></div>' if DEXIN else "")
     return f"""<!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8">{'<meta name="preview" content="1">' if "--preview" in sys.argv else ''}
@@ -437,6 +447,8 @@ main.in{display:flex;flex-direction:column;gap:56px;padding-bottom:64px}
 .nav a{flex:none;min-height:44px;padding:9px 18px;border-radius:999px;background:var(--white);border:1px solid var(--pill-line);color:var(--ink2);text-decoration:none;font-weight:500;font-size:15px;white-space:nowrap}
 .nav a.zone-link{border-color:var(--navy);color:var(--navy);font-weight:700}
 .zone-cta{display:none}
+.card-link{display:flex;width:fit-content;max-width:100%;align-items:center;gap:6px;min-height:44px;margin-top:12px;padding:8px 18px;border-radius:999px;border:1px solid var(--navy);color:var(--navy);font-weight:700;font-size:15px;text-decoration:none}
+.card-link:hover{background:var(--navy-tint)}
 .nav a.on{background:var(--navy);border-color:var(--navy);color:var(--white);font-weight:700}
 .totop{position:fixed;right:16px;bottom:20px;z-index:6;width:44px;height:44px;border-radius:50%;background:var(--navy);color:var(--white);font-size:20px;line-height:44px;text-align:center;text-decoration:none;opacity:0;pointer-events:none;transition:opacity .2s}
 .totop.show{opacity:.9;pointer-events:auto}
@@ -544,6 +556,7 @@ main.in{gap:36px;padding-bottom:40px}
 .dec-b{padding:20px 20px 16px}.dec-next{padding:12px 20px}
 .week{grid-template-columns:1fr}
 .nav a.zone-link{display:none}
+.zone-cta+.zone-cta{margin-top:-8px}
 .zone-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;margin-bottom:-16px;padding:12px 18px;border-radius:14px;background:var(--navy);color:var(--white);text-decoration:none}
 .zone-cta span:first-child{display:flex;flex-direction:column}
 .zone-cta b{font-size:17px;font-weight:700}.zone-cta i{font-style:normal;font-size:13px;opacity:.85}
@@ -563,6 +576,8 @@ def main():
         PHOTOS[d] = '<div class="pics">' + "".join(
             f'<figure><img src="{inline_jpg(week / "_src" / p)}" alt="{html.escape(t)}"><figcaption>{md(t)}</figcaption></figure>'
             for p, t in ps) + "</div>"
+    for k, ls in c.get("links", {}).items():
+        LINKS[k] = "".join(f'<a class="card-link" href="{html.escape(u)}" target="_blank" rel="noopener">{md(t)} ↗</a>' for t, u in ls)
     kf = week / "_src/static_key.txt"
     if "--preview" in sys.argv:   # 試看版：另產一把 key 存 _src/preview_key.txt，不動正式網址
         kf = week / "_src/preview_key.txt"

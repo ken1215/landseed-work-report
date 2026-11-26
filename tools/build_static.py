@@ -310,6 +310,23 @@ def past_weeks(period):
             f'<div class="pws">{cards}</div></section>')
 
 
+ICONS = {   # 入口卡圖示（24×24 線條，色跟著 currentColor）
+    "video": '<rect x="3" y="4.5" width="18" height="12.5" rx="2.5"/><path d="M10.2 8.4v4.7l4.2-2.35z" fill="currentColor"/><path d="M8 20.5h8"/>',
+    "report": '<rect x="5" y="4.2" width="14" height="16.8" rx="2.5"/><path d="M9.2 4.6V3h5.6v1.6"/><path d="M9 16.5v-2.6M12 16.5v-6M15 16.5v-4"/>',
+}
+ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="{d}"/></svg>'
+
+
+def entry_card(url, label, sub, icon, ext):
+    """入口卡：左色帶＋圖示、標題與說明、右側深藍「點此開啟」鈕；ext=True 另開分頁（箭頭改右上）。"""
+    go = ARROW.format(d="M7 17 17 7M9 7h8v8" if ext else "M5 12h14M13 6l6 6-6 6")
+    tgt = ' target="_blank" rel="noopener"' if ext else ""
+    return (f'<a class="zone-cta{" ext" if ext else ""}" href="{html.escape(url)}"{tgt}>'
+            f'<span class="zc-ic"><svg viewBox="0 0 24 24" aria-hidden="true">{ICONS.get(icon, ICONS["report"])}</svg></span>'
+            f'<span class="zc-t"><b>{html.escape(label)}</b><i>{html.escape(sub)}</i></span>'
+            f'<span class="zc-go">點此開啟{go}</span></a>')
+
+
 def build(c):
     secs = sections(c["blocks"])
     n_dec = sum(len(b["table"]["rows"]) - 1 for s in secs for b in s["blocks"]
@@ -345,15 +362,13 @@ def build(c):
     if zk.exists():
         zurl = f"{zk.read_text().strip()}.html?from={KEY}"
         nav += f'<a class="zone-link" href="{zurl}">系統建置專區 →</a>'
-        cta = (f'<a class="zone-cta" href="{zurl}"><span><b>系統建置專區</b><i>歷次系統說明影片</i></span>'
-               f'<span class="zc-go">點此開啟 <b aria-hidden="true">→</b></span></a>')
+        cta = entry_card(zurl, "系統建置專區", "歷次系統說明影片", "video", False)
     lk = ROOT / "tools/links.json"        # 常設外部連結（如板新施工日報網站）：章節列尾端＋手機整寬入口，另開分頁
     if lk.exists():
         for x in json.loads(lk.read_text(encoding="utf-8")):
             u, lab, sub = html.escape(x["url"]), html.escape(x["label"]), html.escape(x.get("sub", ""))
             nav += f'<a class="zone-link" href="{u}" target="_blank" rel="noopener">{lab} ↗</a>'
-            cta += (f'<a class="zone-cta" href="{u}" target="_blank" rel="noopener"><span><b>{lab}</b><i>{sub}</i></span>'
-                    f'<span class="zc-go">點此開啟 <b aria-hidden="true">↗</b></span></a>')
+            cta += entry_card(x["url"], x["label"], x.get("sub", ""), x.get("icon", "report"), True)
     dx = (f'<div class="dx" aria-label="報告單位 德新物業">{DEXIN_MARK}<b>德新物業</b></div>' if DEXIN else "")
     return f"""<!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8">{'<meta name="preview" content="1">' if "--preview" in sys.argv else ''}
@@ -447,17 +462,29 @@ main.in{display:flex;flex-direction:column;gap:56px;padding-bottom:64px}
 .nav{position:sticky;top:0;z-index:5;display:flex;gap:8px;overflow-x:auto;padding:8px 0;margin:-8px 0;background:var(--ground);scrollbar-width:none}
 .nav a{flex:none;min-height:44px;padding:9px 18px;border-radius:999px;background:var(--white);border:1px solid var(--pill-line);color:var(--ink2);text-decoration:none;font-weight:500;font-size:15px;white-space:nowrap}
 .nav a.zone-link{border-color:var(--navy);color:var(--navy);font-weight:700}
-.ctas{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px}
-.zone-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;padding:14px 22px;border-radius:14px;background:var(--navy);color:var(--white);text-decoration:none;box-shadow:var(--card-shadow);transition:transform .15s,background .15s}
-.zone-cta:hover{background:var(--blue);transform:translateY(-2px)}
-.zone-cta span:first-child{display:flex;flex-direction:column}
-.zone-cta b{font-size:18px;font-weight:700}.zone-cta i{font-style:normal;font-size:14px;opacity:.9}
-.zc-go{flex:none;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;padding:6px 14px;border-radius:999px;background:var(--white);color:var(--navy)}
-.zc-go b{font-size:16px}
+.ctas{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px}
+.zone-cta{position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;min-height:88px;padding:16px 20px 16px 26px;border-radius:16px;background:var(--white);border:1px solid var(--line);color:var(--ink-strong);text-decoration:none;box-shadow:var(--card-shadow);transition:transform .18s,border-color .18s}
+.zone-cta::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--navy)}
+.zone-cta.ext::before{background:var(--green)}
+.zone-cta svg,.card-link svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.zc-ic{flex:none;width:56px;height:56px;border-radius:16px;display:grid;place-items:center;background:var(--navy-tint);color:var(--navy)}
+.zone-cta.ext .zc-ic{background:var(--green-tint);color:var(--green-deep)}
+.zc-ic svg{width:30px;height:30px}
+.zc-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.zc-t b{font-size:20px;font-weight:700;line-height:1.3}
+.zc-t i{font-style:normal;font-size:14px;color:var(--mute)}
+.zc-go,.cl-go{flex:none;display:flex;align-items:center;gap:6px;min-height:44px;padding:8px 14px 8px 18px;border-radius:999px;background:var(--navy);color:var(--white);font-size:15px;font-weight:700;white-space:nowrap;transition:background .18s}
+.zc-go svg,.cl-go svg{width:18px;height:18px;stroke-width:2.4;transition:transform .18s}
+.zone-cta:hover{transform:translateY(-2px);border-color:var(--navy)}
+.zone-cta:hover .zc-go,.card-link:hover .cl-go{background:var(--blue)}
+.zone-cta:hover .zc-go svg,.card-link:hover .cl-go svg{transform:translate(2px,-1px)}
+.zone-cta:focus-visible,.card-link:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .nav a.zone-link{display:none}
-.card-link{display:flex;width:fit-content;max-width:100%;align-items:center;gap:12px;min-height:52px;margin-top:16px;padding:10px 12px 10px 22px;border-radius:999px;background:var(--navy);color:var(--white);font-weight:700;font-size:17px;text-decoration:none;box-shadow:var(--card-shadow);transition:transform .15s,background .15s}
-.card-link:hover{background:var(--blue);transform:translateY(-2px)}
-.cl-go{flex:none;font-size:14px;padding:6px 14px;border-radius:999px;background:var(--white);color:var(--navy)}
+.card-link{display:flex;align-items:center;gap:12px;margin-top:16px;padding:10px 10px 10px 14px;border-radius:14px;background:var(--navy-tint);color:var(--navy-ink);text-decoration:none;transition:background .18s}
+.card-link:hover{background:var(--headfill)}
+.cl-ic{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--white);color:var(--navy)}
+.cl-ic svg{width:22px;height:22px}
+.cl-t{flex:1;min-width:0;font-size:17px;font-weight:700}
 .nav a.on{background:var(--navy);border-color:var(--navy);color:var(--white);font-weight:700}
 .totop{position:fixed;right:16px;bottom:20px;z-index:6;width:44px;height:44px;border-radius:50%;background:var(--navy);color:var(--white);font-size:20px;line-height:44px;text-align:center;text-decoration:none;opacity:0;pointer-events:none;transition:opacity .2s}
 .totop.show{opacity:.9;pointer-events:auto}
@@ -564,7 +591,7 @@ main.in{gap:36px;padding-bottom:40px}
 .grp{padding:20px}.gi-h{font-size:19px}.card{padding:20px}
 .dec-b{padding:20px 20px 16px}.dec-next{padding:12px 20px}
 .week{grid-template-columns:1fr}
-.ctas{margin-bottom:-16px}.zone-cta{padding:12px 16px}.card-link{width:100%;justify-content:space-between;font-size:16px}
+.ctas{margin-bottom:-16px;gap:12px}.zone-cta{min-height:76px;gap:12px;padding:12px 12px 12px 20px}.zc-ic{width:44px;height:44px;border-radius:12px}.zc-ic svg{width:24px;height:24px}.zc-t b{font-size:18px}.zc-t i{font-size:13px}.zc-go,.cl-go{padding:8px 10px 8px 14px;font-size:14px}.cl-t{font-size:16px}
 .tbl table{min-width:560px}.tbl th,.tbl td{padding:12px 16px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}html{scroll-behavior:auto}}
 @media print{.ctas,.card-link,.zone-cta,.nav,.totop,.petals{display:none}.sec{break-inside:avoid-page}}
@@ -581,7 +608,10 @@ def main():
             f'<figure><img src="{inline_jpg(week / "_src" / p)}" alt="{html.escape(t)}"><figcaption>{md(t)}</figcaption></figure>'
             for p, t in ps) + "</div>"
     for k, ls in c.get("links", {}).items():
-        LINKS[k] = "".join(f'<a class="card-link" href="{html.escape(u)}" target="_blank" rel="noopener"><span>{md(t)}</span><span class="cl-go">點此開啟 ↗</span></a>' for t, u in ls)
+        LINKS[k] = "".join(f'<a class="card-link" href="{html.escape(u)}" target="_blank" rel="noopener">'
+                           f'<span class="cl-ic"><svg viewBox="0 0 24 24" aria-hidden="true">{ICONS["report"]}</svg></span>'
+                           f'<span class="cl-t">{md(t)}</span>'
+                           f'<span class="cl-go">點此開啟{ARROW.format(d="M7 17 17 7M9 7h8v8")}</span></a>' for t, u in ls)
     kf = week / "_src/static_key.txt"
     if "--preview" in sys.argv:   # 試看版：另產一把 key 存 _src/preview_key.txt，不動正式網址
         kf = week / "_src/preview_key.txt"

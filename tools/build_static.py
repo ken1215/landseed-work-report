@@ -280,6 +280,23 @@ def tile(label, v, u, tone):
             f'<span class="tile-v {tone}"><b{count}>{md(v)}</b> <i>{md(u)}</i></span></div>')
 
 
+def past_weeks(period):
+    """過往各期連結（備查）：掃 web/r 已發佈頁的 <title>，只列早於本期者，新的在上；試看版不列。"""
+    def start(t):
+        m = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", t)
+        return tuple(map(int, m.groups())) if m else None
+    cur, items = start(period), {}
+    for f in (ROOT / "web/r").glob("*.html"):
+        head = f.read_text(encoding="utf-8")[:2000]
+        m = re.search(r"<title>[^｜<]*｜([^<]+)</title>", head)
+        if not m or 'name="preview"' in head: continue
+        s = start(m.group(1))
+        if s and cur and s < cur: items[s] = (f.name, m.group(1))
+    if not items: return ""
+    li = "".join(f'<li><a href="{n}">{html.escape(t)}</a></li>' for _, (n, t) in sorted(items.items(), reverse=True))
+    return f'<section class="past" aria-label="過往報告"><h2>過往報告（備查）</h2><ul>{li}</ul></section>'
+
+
 def build(c):
     secs = sections(c["blocks"])
     n_dec = sum(len(b["table"]["rows"]) - 1 for s in secs for b in s["blocks"]
@@ -317,7 +334,7 @@ def build(c):
                f'<span class="zc-go" aria-hidden="true">→</span></a>')
     dx = (f'<div class="dx" aria-label="報告單位 德新物業">{DEXIN_MARK}<b>德新物業</b></div>' if DEXIN else "")
     return f"""<!doctype html>
-<html lang="zh-Hant"><head><meta charset="utf-8">
+<html lang="zh-Hant"><head><meta charset="utf-8">{'<meta name="preview" content="1">' if "--preview" in sys.argv else ''}
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>{html.escape(c["title"])}｜{html.escape(c["period"])}</title>
@@ -337,6 +354,7 @@ def build(c):
 {cta}
 <nav class="nav" id="nav" aria-label="章節">{nav}</nav>
 {"".join(h for h, _ in rendered)}
+{past_weeks(c["period"])}
 </main>
 <footer class="copy"><div class="in">{'報告單位：德新物業 LANDSEED PROPERTY　｜　' if DEXIN else ''}Copyright © Landseed International Medical Group　本頁僅供提報對象閱覽</div></footer>
 <a class="totop" href="#top" aria-label="回到頂端">↑</a>
@@ -486,6 +504,9 @@ main.in{display:flex;flex-direction:column;gap:56px;padding-bottom:64px}
 .bar-v{color:var(--navy);font-weight:700;font-size:14px;white-space:nowrap}
 .bul{list-style:disc;padding-left:1.4em;color:var(--sub)}
 .foot{color:var(--mute);font-size:13px}
+.past{margin:40px 0 32px;padding-top:20px;border-top:1px solid var(--line);font-size:14px}
+.past h2{font-size:15px;color:var(--mute);margin:0 0 8px}.past ul{list-style:none;padding:0;margin:0}
+.past a{display:inline-block;padding:6px 0;color:var(--navy)}
 .copy{background:var(--white);border-top:1px solid var(--line);font-size:13px;color:var(--mute)}
 .copy .in{padding-top:22px;padding-bottom:22px}
 @media (max-width:600px){

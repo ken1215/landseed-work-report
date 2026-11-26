@@ -293,8 +293,18 @@ def past_weeks(period):
         s = start(m.group(1))
         if s and cur and s < cur: items[s] = (f.name, m.group(1))
     if not items: return ""
-    li = "".join(f'<li><a href="{n}">{html.escape(t)}</a></li>' for _, (n, t) in sorted(items.items(), reverse=True))
-    return f'<section class="past" aria-label="過往報告"><h2>過往報告（備查）</h2><ul>{li}</ul></section>'
+    cards = ""
+    for i, ((y, mo, _), (n, t)) in enumerate(sorted(items.items(), reverse=True)):
+        ds = re.findall(r"(\d{1,2})月(\d{1,2})日", t)
+        rng = f"{ds[0][0]}/{ds[0][1]} – {ds[-1][0]}/{ds[-1][1]}" if len(ds) >= 2 else html.escape(t)
+        w = re.findall(r"[（(](.)[）)]", t)
+        wk = f"週{w[0]} 至 週{w[-1]}" if len(w) >= 2 else ""
+        cards += (f'<a class="pw" href="{n}" title="{html.escape(t)}"><span class="pw-m">{y} 年 {mo} 月'
+                  f'{"<em>上一期</em>" if i == 0 else ""}</span><b>{rng}</b>'
+                  f'<span class="pw-d">{wk}</span><span class="pw-go">開啟報告 →</span></a>')
+    return (f'<section class="past" id="past" aria-label="過往報告"><div class="sh"><h2>過往報告</h2>'
+            f'<span class="sec-note">備查用，共 {len(items)} 期・點選任一期開啟當週完整報告</span></div>'
+            f'<div class="pws">{cards}</div></section>')
 
 
 def build(c):
@@ -325,6 +335,8 @@ def build(c):
     sm_html = (f'<section class="sum" aria-label="三十秒摘要"><h2>30 秒看完本週</h2><ul>{sm}</ul></section>' if sm else "")
     nav = "".join(f'<a href="#s{i+1}" title="{html.escape(t)}">{i+1:02d} {html.escape(short_title(t))}</a>'
                   for i, (_, t) in enumerate(rendered))
+    past = past_weeks(c["period"])
+    if past: nav += '<a href="#past">過往報告</a>'
     zk = ROOT / "tools/systems_key.txt"   # 系統建置專區（build_systems.py 產生）；有就在章節列尾端掛連結
     cta = ""                              # 手機版章節列要橫向滑到底才看得到連結，另放一顆整寬入口在章節列上方
     if zk.exists():
@@ -354,7 +366,7 @@ def build(c):
 {cta}
 <nav class="nav" id="nav" aria-label="章節">{nav}</nav>
 {"".join(h for h, _ in rendered)}
-{past_weeks(c["period"])}
+{past}
 </main>
 <footer class="copy"><div class="in">{'報告單位：德新物業 LANDSEED PROPERTY　｜　' if DEXIN else ''}Copyright © Landseed International Medical Group　本頁僅供提報對象閱覽</div></footer>
 <a class="totop" href="#top" aria-label="回到頂端">↑</a>
@@ -504,9 +516,16 @@ main.in{display:flex;flex-direction:column;gap:56px;padding-bottom:64px}
 .bar-v{color:var(--navy);font-weight:700;font-size:14px;white-space:nowrap}
 .bul{list-style:disc;padding-left:1.4em;color:var(--sub)}
 .foot{color:var(--mute);font-size:13px}
-.past{margin:40px 0 32px;padding-top:20px;border-top:1px solid var(--line);font-size:14px}
-.past h2{font-size:15px;color:var(--mute);margin:0 0 8px}.past ul{list-style:none;padding:0;margin:0}
-.past a{display:inline-block;padding:6px 0;color:var(--navy)}
+.past{scroll-margin-top:72px;display:flex;flex-direction:column;gap:20px;padding-top:40px;border-top:1px solid var(--line)}
+.pws{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr));gap:14px}
+.pw{display:flex;flex-direction:column;gap:6px;min-height:44px;padding:18px 20px;background:var(--white);border:1px solid var(--pill-line);border-radius:16px;text-decoration:none;color:var(--ink2);transition:transform .15s,border-color .15s,box-shadow .15s}
+.pw:hover,.pw:focus-visible{border-color:var(--navy);box-shadow:var(--card-shadow);transform:translateY(-2px)}
+.pw-m{white-space:nowrap;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute)}
+.pw-m em{font-style:normal;font-size:12px;font-weight:700;color:var(--navy);background:var(--navy-tint);border-radius:999px;padding:1px 10px}
+.pw b{font-size:26px;line-height:1.2;font-weight:900;color:var(--navy);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pw-d{font-size:13px;color:var(--mute)}
+.pw-go{margin-top:auto;padding-top:8px;font-size:14px;font-weight:700;color:var(--navy)}
+@media (max-width:600px){.past{padding-top:28px}.pws{grid-template-columns:1fr 1fr;gap:10px}.pw{padding:14px}.pw b{font-size:20px}}
 .copy{background:var(--white);border-top:1px solid var(--line);font-size:13px;color:var(--mute)}
 .copy .in{padding-top:22px;padding-bottom:22px}
 @media (max-width:600px){
